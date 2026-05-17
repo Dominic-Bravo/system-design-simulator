@@ -4,9 +4,9 @@ Interactive React app for sketching a system architecture and running a basic la
 
 ## What You Can Do
 
-- Add system components: load balancer, API, cache, queue, and database.
+- Add categorized real-world system components: clients, DNS, CDN, load balancers, API gateways, services, databases, caches, queues, streams, object storage, third-party APIs, payments, notifications, and monitoring.
 - Connect components by dragging handles or by using the simple click-to-connect flow.
-- Configure per-node latency.
+- Configure per-node settings based on the component type, such as latency, capacity, replicas, cache hit rate, queue retention, storage size, provider, timeout, and alerting.
 - Run a simple traffic simulation and watch request data animate through the connected architecture.
 - View average latency, p95 latency, processed requests, route length, and likely bottlenecks.
 - Save, load, and reset the current graph using browser local storage.

@@ -1,15 +1,7 @@
 import { useMemo } from 'react'
 import { useGraphStore } from '../stores/graphStore'
-import type { NodeType } from '../simulation/types'
 import type { SimulationResult } from '../simulation/engine'
-
-const nodeTypes: { type: NodeType; label: string; hint: string }[] = [
-  { type: 'load_balancer', label: 'Load Balancer', hint: 'routes traffic' },
-  { type: 'api', label: 'API Service', hint: 'handles requests' },
-  { type: 'cache', label: 'Cache', hint: 'fast reads' },
-  { type: 'queue', label: 'Queue', hint: 'async work' },
-  { type: 'database', label: 'Database', hint: 'persistent data' },
-]
+import { nodeCatalog, nodeCategories, nodeDefinitionByType } from '../simulation/nodeCatalog'
 
 function metric(value: number, suffix = '') {
   return `${value.toFixed(value % 1 === 0 ? 0 : 1)}${suffix}`
@@ -49,6 +41,7 @@ export function SimulationPanel({
   const reset = useGraphStore((s) => s.reset)
 
   const selected = useMemo(() => model.nodes.find((n) => n.id === selectedId) ?? null, [model.nodes, selectedId])
+  const selectedDefinition = selected ? nodeDefinitionByType[selected.type] : null
   const canRun = model.nodes.length > 0
   const bottleneckNames = result.bottleneckNodeIds
     .map((id) => model.nodes.find((n) => n.id === id)?.name ?? id)
@@ -59,23 +52,30 @@ export function SimulationPanel({
       <section className="panel-section">
         <div className="section-heading">
           <span>Build</span>
-          <small>Add services, then drag handles to connect them.</small>
+          <small>Add real system components, then connect them.</small>
         </div>
         <div className="node-palette">
-          {nodeTypes.map((t) => (
-            <button
-              key={t.type}
-              type="button"
-              className="palette-button"
-              onClick={() => {
-                const id = addNode(t.type)
-                onSelectNode(id)
-                onClearResult()
-              }}
-            >
-              <span>{t.label}</span>
-              <small>{t.hint}</small>
-            </button>
+          {nodeCategories.map((category) => (
+            <div className="palette-category" key={category}>
+              <div className="category-title">{category}</div>
+              {nodeCatalog
+                .filter((node) => node.category === category)
+                .map((t) => (
+                  <button
+                    key={t.type}
+                    type="button"
+                    className="palette-button"
+                    onClick={() => {
+                      const id = addNode(t.type)
+                      onSelectNode(id)
+                      onClearResult()
+                    }}
+                  >
+                    <span>{t.label}</span>
+                    <small>{t.hint}</small>
+                  </button>
+                ))}
+            </div>
           ))}
         </div>
       </section>
@@ -133,7 +133,7 @@ export function SimulationPanel({
       <section className="panel-section">
         <div className="section-heading">
           <span>Selected Node</span>
-          <small>Edit latency to see how metrics change.</small>
+          <small>{selectedDefinition ? `${selectedDefinition.category} component` : 'Configure real project settings.'}</small>
         </div>
 
         {selected ? (
@@ -142,15 +142,39 @@ export function SimulationPanel({
               <span>Name</span>
               <input value={selected.name} onChange={(e) => updateNode(selected.id, { name: e.target.value })} />
             </label>
-            <label className="field">
-              <span>Latency</span>
-              <input
-                type="number"
-                min={0}
-                value={typeof selected.config?.latencyMs === 'number' ? selected.config.latencyMs : 0}
-                onChange={(e) => updateNode(selected.id, { config: { latencyMs: Number(e.target.value) } })}
-              />
-            </label>
+            <div className="config-grid">
+              {selectedDefinition?.fields.map((field) => {
+                const value = selected.config[field.key]
+
+                if (field.type === 'boolean') {
+                  return (
+                    <label className="field checkbox-field" key={field.key}>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(value)}
+                        onChange={(e) => updateNode(selected.id, { config: { [field.key]: e.target.checked } })}
+                      />
+                      <span>{field.label}</span>
+                    </label>
+                  )
+                }
+
+                return (
+                  <label className="field" key={field.key}>
+                    <span>{field.label}{field.suffix ? ` (${field.suffix})` : ''}</span>
+                    <input
+                      type={field.type === 'number' ? 'number' : 'text'}
+                      min={field.type === 'number' ? 0 : undefined}
+                      value={field.type === 'number' ? Number(value ?? 0) : String(value ?? '')}
+                      onChange={(e) => {
+                        const nextValue = field.type === 'number' ? Number(e.target.value) : e.target.value
+                        updateNode(selected.id, { config: { [field.key]: nextValue } })
+                      }}
+                    />
+                  </label>
+                )
+              })}
+            </div>
             {connectFromId === selected.id ? (
               <button type="button" className="secondary-button active" onClick={onCancelConnection}>
                 Click a destination node

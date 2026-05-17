@@ -98,7 +98,20 @@ button {
 
 .node-palette {
   display: grid;
-  gap: 8px;
+  gap: 12px;
+}
+
+.palette-category {
+  display: grid;
+  gap: 7px;
+}
+
+.category-title {
+  color: var(--text-h);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .palette-button,
@@ -211,6 +224,32 @@ button {
 .node-editor {
   display: grid;
   gap: 10px;
+}
+
+.config-grid {
+  display: grid;
+  gap: 9px;
+}
+
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-2);
+  padding: 8px 10px;
+}
+
+.checkbox-field input {
+  width: 16px;
+  height: 16px;
+}
+
+.checkbox-field span {
+  color: var(--text-h);
+  font-size: 13px;
 }
 
 .danger-button {

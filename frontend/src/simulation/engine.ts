@@ -76,7 +76,13 @@ function findStartNodeId(model: GraphModel) {
   const targets = new Set(model.edges.map((e) => e.target))
   const entryNodes = model.nodes.filter((n) => !targets.has(n.id))
   const candidates = entryNodes.length > 0 ? entryNodes : model.nodes
-  const preferred = candidates.find((n) => n.type === 'load_balancer') ?? candidates.find((n) => n.type === 'api')
+  const preferred =
+    candidates.find((n) => n.type === 'client') ??
+    candidates.find((n) => n.type === 'dns') ??
+    candidates.find((n) => n.type === 'cdn') ??
+    candidates.find((n) => n.type === 'load_balancer') ??
+    candidates.find((n) => n.type === 'api_gateway') ??
+    candidates.find((n) => n.type === 'api')
 
   return preferred?.id ?? candidates[0]?.id ?? model.nodes[0].id
 }

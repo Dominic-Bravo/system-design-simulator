@@ -1,36 +1,20 @@
 import { create } from 'zustand'
 import type { GraphEdge, GraphModel, GraphNode, NodeType } from '../simulation/types'
+import { nodeDefinitionByType } from '../simulation/nodeCatalog'
 
 const STORAGE_KEY = 'sds_graph_v1'
 
 const uid = () => Math.random().toString(16).slice(2) + Date.now().toString(16)
 
 function defaultNode(type: NodeType, position: GraphNode['position']): GraphNode {
+  const definition = nodeDefinitionByType[type]
   const base: Omit<GraphNode, 'id'> = {
     type,
-    name:
-      type === 'api'
-        ? 'API'
-        : type === 'database'
-          ? 'Database'
-          : type === 'cache'
-            ? 'Cache (Redis)'
-            : type === 'queue'
-              ? 'Queue'
-              : 'Load Balancer',
-    config: {},
+    name: definition.defaultName,
+    config: { ...definition.defaults },
   }
 
-  // Minimal per-node config used by Phase 1 request traversal.
-  const config: GraphNode['config'] = {}
-
-  if (type === 'api') config.latencyMs = 5
-  if (type === 'database') config.latencyMs = 25
-  if (type === 'cache') config.latencyMs = 2
-  if (type === 'queue') config.latencyMs = 10
-  if (type === 'load_balancer') config.latencyMs = 1
-
-  return { id: uid(), ...base, position, config }
+  return { id: uid(), ...base, position }
 }
 
 function loadInitial(): GraphModel {
