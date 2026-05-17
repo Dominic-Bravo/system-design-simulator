@@ -18,6 +18,7 @@ export function SimulationPanel({
   onStartConnection,
   onCancelConnection,
   onSelectNode,
+  onOpenConfig,
   onClearResult,
 }: {
   selectedId: string | null
@@ -30,6 +31,7 @@ export function SimulationPanel({
   onStartConnection: (id: string) => void
   onCancelConnection: () => void
   onSelectNode: (id: string | null) => void
+  onOpenConfig: () => void
   onClearResult: () => void
 }) {
   const model = useGraphStore((s) => s.model)
@@ -175,6 +177,9 @@ export function SimulationPanel({
                 )
               })}
             </div>
+            <button type="button" className="secondary-button" onClick={onOpenConfig}>
+              Configure node
+            </button>
             {connectFromId === selected.id ? (
               <button type="button" className="secondary-button active" onClick={onCancelConnection}>
                 Click a destination node

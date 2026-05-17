@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { ReactFlowProvider } from 'reactflow'
 import { SimulationPanel } from './components/SimulationPanel'
 import { BuilderCanvas } from './components/BuilderCanvas'
+import { NodeConfigModal } from './components/NodeConfigModal'
 import { useGraphStore } from './stores/graphStore'
 import { runBasicSimulation } from './simulation/engine'
 import type { SimulationResult } from './simulation/engine'
@@ -18,8 +19,12 @@ const EMPTY_RESULT: SimulationResult = {
 export default function App() {
   const model = useGraphStore((s) => s.model)
   const addEdge = useGraphStore((s) => s.addEdge)
+  const updateNode = useGraphStore((s) => s.updateNode)
+  const removeNode = useGraphStore((s) => s.removeNode)
+  const removeEdge = useGraphStore((s) => s.removeEdge)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [connectFromId, setConnectFromId] = useState<string | null>(null)
+  const [isConfigOpen, setIsConfigOpen] = useState(false)
   const [trafficRps, setTrafficRps] = useState(100)
   const [result, setResult] = useState<SimulationResult>(EMPTY_RESULT)
   const [activeStep, setActiveStep] = useState(-1)
@@ -27,6 +32,7 @@ export default function App() {
 
   const activeNodeId = activeStep >= 0 ? result.pathNodeIds[activeStep] : undefined
   const activeEdgeId = activeStep >= 0 ? result.pathEdgeIds[activeStep] : undefined
+  const selectedNode = selectedId ? model.nodes.find((node) => node.id === selectedId) ?? null : null
 
   const status = useMemo(() => {
     if (model.nodes.length === 0) return 'Add nodes to start building.'
@@ -70,6 +76,7 @@ export default function App() {
       addEdge(connectFromId, id)
       setConnectFromId(null)
       setSelectedId(id)
+      setIsConfigOpen(true)
       setResult(EMPTY_RESULT)
       setActiveStep(-1)
       setIsRunning(false)
@@ -77,6 +84,7 @@ export default function App() {
     }
 
     setSelectedId(id)
+    setIsConfigOpen(Boolean(id))
   }
 
   return (
@@ -94,6 +102,7 @@ export default function App() {
             onStartConnection={(id) => setConnectFromId(id)}
             onCancelConnection={() => setConnectFromId(null)}
             onSelectNode={selectNode}
+            onOpenConfig={() => setIsConfigOpen(Boolean(selectedId))}
             onClearResult={() => {
               setResult(EMPTY_RESULT)
               setActiveStep(-1)
@@ -125,6 +134,34 @@ export default function App() {
             onSelectNode={selectNode}
           />
         </section>
+
+        {selectedNode && isConfigOpen ? (
+          <NodeConfigModal
+            node={selectedNode}
+            nodes={model.nodes}
+            outgoingNodeIds={model.edges.filter((edge) => edge.source === selectedNode.id).map((edge) => edge.target)}
+            onClose={() => setIsConfigOpen(false)}
+            onUpdateNode={(patch) => {
+              updateNode(selectedNode.id, patch)
+              setResult(EMPTY_RESULT)
+            }}
+            onAddConnection={(targetId) => {
+              addEdge(selectedNode.id, targetId)
+              setResult(EMPTY_RESULT)
+            }}
+            onRemoveConnection={(targetId) => {
+              const edge = model.edges.find((candidate) => candidate.source === selectedNode.id && candidate.target === targetId)
+              if (edge) removeEdge(edge.id)
+              setResult(EMPTY_RESULT)
+            }}
+            onDeleteNode={() => {
+              removeNode(selectedNode.id)
+              setSelectedId(null)
+              setIsConfigOpen(false)
+              setResult(EMPTY_RESULT)
+            }}
+          />
+        ) : null}
       </main>
     </ReactFlowProvider>
   )

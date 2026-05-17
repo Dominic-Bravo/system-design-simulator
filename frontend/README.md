@@ -51,10 +51,10 @@ http://localhost:5173
 ## Use The App
 
 1. Click component buttons in the left panel to add nodes.
-2. Select a source node on the canvas.
-3. Click `Start connection` in the left panel.
-4. Click the destination node on the canvas to create a directed link.
-5. Select any node and edit its name or latency in milliseconds.
+2. When a node is added, use the configuration modal to edit realistic settings for that component.
+3. Click any node on the canvas to reopen its configuration modal.
+4. Add or remove outgoing connections from the modal, or use `Start connection` and click a destination node.
+5. Drag nodes on the canvas to move them around.
 6. Adjust the traffic slider.
 7. Click `Run simulation` to calculate metrics and animate data flow through the architecture.
 8. Click `Save` to persist the graph in browser local storage, `Load` to restore it, or `Reset` to clear it.
