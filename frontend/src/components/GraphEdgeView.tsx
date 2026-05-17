@@ -11,9 +11,9 @@ export function GraphEdgeView({
   sourcePosition,
   targetPosition,
   markerEnd,
-  selected,
-}: EdgeProps<{ edge: GraphEdge }>) {
-  const latency = data?.edge?.config?.latencyMs
+}: EdgeProps<{ edge: GraphEdge; isActive: boolean }>) {
+  const latency = data?.edge?.config?.latencyMs ?? 0
+  const isActive = data?.isActive ?? false
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
@@ -24,36 +24,24 @@ export function GraphEdgeView({
   })
 
   return (
-    <g>
+    <g className={isActive ? 'flow-edge active' : 'flow-edge'}>
       <BaseEdge
         path={edgePath}
         markerEnd={markerEnd}
         style={{
-          stroke: selected ? 'var(--accent)' : 'var(--border)',
-          strokeWidth: selected ? 3 : 2,
+          stroke: isActive ? '#14b8a6' : '#9ca3af',
+          strokeWidth: isActive ? 4 : 2,
         }}
       />
-      {latency !== undefined && latency > 0 ? (
-        <EdgeLabelRenderer>
-          <div
-            style={{
-              position: 'absolute',
-              transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
-              fontSize: 12,
-              fontFamily: 'var(--mono)',
-              color: 'var(--text-h)',
-              background: 'var(--bg)',
-              border: '1px solid var(--border)',
-              borderRadius: 4,
-              padding: '2px 6px',
-              pointerEvents: 'none',
-            }}
-          >
-            {latency}ms
-          </div>
-        </EdgeLabelRenderer>
-      ) : null}
-      <title>{latency !== undefined ? `edge latency ${latency}ms` : 'edge'}</title>
+      {isActive ? <circle r="6" className="packet-dot"><animateMotion dur="0.85s" repeatCount="indefinite" path={edgePath} /></circle> : null}
+      <EdgeLabelRenderer>
+        <div
+          className={isActive ? 'edge-label active' : 'edge-label'}
+          style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
+        >
+          {latency}ms
+        </div>
+      </EdgeLabelRenderer>
     </g>
   )
 }

@@ -1,5 +1,27 @@
 # Interactive System Design Learning Simulator
 
+## Current MVP
+
+The implemented frontend is a simple system design simulator. You can add architecture nodes, connect them into request paths, tune latency, and run an animated data-flow simulation across the design.
+
+Run it with:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+On Windows PowerShell, use `npm.cmd` if script execution policy blocks `npm`:
+
+```powershell
+cd frontend
+npm.cmd install
+npm.cmd run dev
+```
+
+Open the Vite URL printed in the terminal, usually `http://localhost:5173`.
+
 ## Vision
 
 Create an interactive learning platform where programmers can visually build, configure, simulate, and understand real-world software architectures.

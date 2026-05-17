@@ -1,51 +1,52 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import ReactFlow, {
   Background,
   Controls,
+  MarkerType,
   MiniMap,
+  applyNodeChanges,
 } from 'reactflow'
-import type { Node, Edge, Connection, ReactFlowInstance } from 'reactflow'
+import type { Node, Edge, Connection, NodeChange } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { useGraphStore } from '../stores/graphStore'
-import type { GraphNode } from '../simulation/types'
 import { GraphNodeView } from './GraphNodeView'
 import { GraphEdgeView } from './GraphEdgeView'
 
 const nodeW = 190
-const nodeH = 62
-
-function layoutNodes(nodes: GraphNode[]): Record<string, { x: number; y: number }> {
-  const positions: Record<string, { x: number; y: number }> = {}
-  let i = 0
-  for (const n of nodes) {
-    positions[n.id] = { x: (i % 2) * 320, y: Math.floor(i / 2) * 120 }
-    i++
-  }
-  return positions
-}
+const nodeH = 72
 
 export function BuilderCanvas({
   selectedId,
+  activeNodeId,
+  activeEdgeId,
+  connectFromId,
+  pathNodeIds,
   onSelectNode,
 }: {
   selectedId: string | null
-  onSelectNode: (id: string) => void
+  activeNodeId?: string
+  activeEdgeId?: string
+  connectFromId: string | null
+  pathNodeIds: string[]
+  onSelectNode: (id: string | null) => void
 }) {
   const model = useGraphStore((s) => s.model)
+  const setModel = useGraphStore((s) => s.setModel)
   const addEdge = useGraphStore((s) => s.addEdge)
 
-  const [rf, setRf] = useState<ReactFlowInstance | null>(null)
-
   const { nodes, edges } = useMemo(() => {
-    const pos = layoutNodes(model.nodes)
-
     const rfNodes: Node[] = model.nodes.map((n, idx) => ({
       id: n.id,
       type: 'graphNode',
-      position: pos[n.id] ?? { x: idx * 220, y: 0 },
+      position: n.position ?? { x: 80 + (idx % 3) * 280, y: 80 + Math.floor(idx / 3) * 140 },
+      width: nodeW,
+      height: nodeH,
       data: {
         node: n,
-        isSelected: selectedId === n.id,
+        isSelected: selectedId === n.id || connectFromId === n.id,
+        isActive: activeNodeId === n.id,
+        isConnectSource: connectFromId === n.id,
+        isInPath: pathNodeIds.includes(n.id),
       },
       style: {
         width: nodeW,
@@ -58,20 +59,34 @@ export function BuilderCanvas({
       source: e.source,
       target: e.target,
       type: 'graphEdge',
-      animated: false,
+      animated: activeEdgeId === e.id,
+      markerEnd: {
+        type: MarkerType.ArrowClosed,
+        color: activeEdgeId === e.id ? '#14b8a6' : '#9ca3af',
+      },
       data: {
         edge: e,
+        isActive: activeEdgeId === e.id,
       },
     }))
 
     return { nodes: rfNodes, edges: rfEdges }
-  }, [model.nodes, model.edges, selectedId])
+  }, [activeEdgeId, activeNodeId, connectFromId, model.edges, model.nodes, pathNodeIds, selectedId])
 
-  // Keep viewport stable on reload; minimal effort for Phase 1.
-  useEffect(() => {
-    if (!rf) return
-    // no-op
-  }, [rf])
+  const onNodesChange = (changes: NodeChange[]) => {
+    const positionChanges = changes.filter((change) => change.type === 'position')
+    if (positionChanges.length === 0) return
+
+    const updatedNodes = applyNodeChanges(positionChanges, nodes)
+    const positions = new Map(updatedNodes.map((n) => [n.id, n.position]))
+    setModel({
+      ...model,
+      nodes: model.nodes.map((n) => ({
+        ...n,
+        position: positions.get(n.id) ?? n.position,
+      })),
+    })
+  }
 
   const onConnect = (connection: Connection) => {
     if (!connection.source || !connection.target) return
@@ -82,32 +97,32 @@ export function BuilderCanvas({
   const edgeTypes = useMemo(() => ({ graphEdge: GraphEdgeView }), [])
 
   return (
-    <div style={{ border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', height: 'calc(100svh - 24px)' }}>
+    <div className="canvas-shell">
+      {model.nodes.length === 0 ? (
+        <div className="canvas-empty">
+          <h2>Start with a component</h2>
+          <p>Add nodes from the left panel, connect them, then run the simulator.</p>
+        </div>
+      ) : null}
+
       <ReactFlow
         nodes={nodes}
         edges={edges}
-        onNodesChange={() => {
-          // Phase 1: positions are derived from simple layout.
-          // Future: persist positions.
-        }}
-        onEdgesChange={() => {
-          // Phase 1: edge deletion not yet exposed.
-        }}
+        onNodesChange={onNodesChange}
         onConnect={onConnect}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
-        onInit={setRf}
         fitView
+        fitViewOptions={{ padding: 0.24, maxZoom: 1 }}
+        minZoom={0.35}
+        maxZoom={1.2}
         onNodeClick={(_, node) => onSelectNode(node.id)}
-        onPaneClick={() => {
-          // no-op
-        }}
+        onPaneClick={() => onSelectNode(null)}
       >
-        <Background gap={18} />
-        <MiniMap />
+        <Background gap={20} color="rgba(100,116,139,0.26)" />
+        <MiniMap pannable zoomable nodeStrokeWidth={3} />
         <Controls />
       </ReactFlow>
     </div>
   )
 }
-

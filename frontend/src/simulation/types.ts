@@ -4,6 +4,10 @@ export type GraphNode = {
   id: string
   type: NodeType
   name: string
+  position?: {
+    x: number
+    y: number
+  }
   config: Record<string, number | string | boolean>
 }
 

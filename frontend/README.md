@@ -5,9 +5,10 @@ Interactive React app for sketching a system architecture and running a basic la
 ## What You Can Do
 
 - Add system components: load balancer, API, cache, queue, and database.
-- Connect components on the canvas to create request paths.
+- Connect components by dragging handles or by using the simple click-to-connect flow.
 - Configure per-node latency.
-- Run a simple traffic simulation and view average latency, p95 latency, processed requests, and likely bottlenecks.
+- Run a simple traffic simulation and watch request data animate through the connected architecture.
+- View average latency, p95 latency, processed requests, route length, and likely bottlenecks.
 - Save, load, and reset the current graph using browser local storage.
 
 ## Requirements
@@ -49,12 +50,14 @@ http://localhost:5173
 
 ## Use The App
 
-1. Click a component button in the left panel to add a node.
-2. Drag from the right handle of one node to the left handle of another node to connect them.
-3. Select a node and edit its name or latency in milliseconds.
-4. Adjust the traffic slider.
-5. Click `Run simulation` to calculate latency metrics.
-6. Click `Save` to persist the graph in browser local storage, `Load` to restore it, or `Reset` to clear it.
+1. Click component buttons in the left panel to add nodes.
+2. Select a source node on the canvas.
+3. Click `Start connection` in the left panel.
+4. Click the destination node on the canvas to create a directed link.
+5. Select any node and edit its name or latency in milliseconds.
+6. Adjust the traffic slider.
+7. Click `Run simulation` to calculate metrics and animate data flow through the architecture.
+8. Click `Save` to persist the graph in browser local storage, `Load` to restore it, or `Reset` to clear it.
 
 ## Build For Production
 

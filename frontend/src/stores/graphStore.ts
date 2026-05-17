@@ -5,7 +5,7 @@ const STORAGE_KEY = 'sds_graph_v1'
 
 const uid = () => Math.random().toString(16).slice(2) + Date.now().toString(16)
 
-function defaultNode(type: NodeType): GraphNode {
+function defaultNode(type: NodeType, position: GraphNode['position']): GraphNode {
   const base: Omit<GraphNode, 'id'> = {
     type,
     name:
@@ -30,7 +30,7 @@ function defaultNode(type: NodeType): GraphNode {
   if (type === 'queue') config.latencyMs = 10
   if (type === 'load_balancer') config.latencyMs = 1
 
-  return { id: uid(), ...base, config }
+  return { id: uid(), ...base, position, config }
 }
 
 function loadInitial(): GraphModel {
@@ -51,6 +51,7 @@ export const useGraphStore = create<{
   reset: () => void
   addNode: (type: NodeType) => string
   updateNode: (id: string, patch: Partial<GraphNode>) => void
+  updateNodePosition: (id: string, position: NonNullable<GraphNode['position']>) => void
   removeNode: (id: string) => void
   addEdge: (source: string, target: string) => void
   removeEdge: (id: string) => void
@@ -67,14 +68,22 @@ export const useGraphStore = create<{
     localStorage.setItem(STORAGE_KEY, JSON.stringify(m))
   },
   addNode: (type) => {
-    const node = defaultNode(type)
-    const m = { ...useGraphStore.getState().model, nodes: [...useGraphStore.getState().model.nodes, node] }
+    const m0 = useGraphStore.getState().model
+    const col = m0.nodes.length % 3
+    const row = Math.floor(m0.nodes.length / 3)
+    const node = defaultNode(type, { x: 80 + col * 280, y: 80 + row * 140 })
+    const m = { ...m0, nodes: [...m0.nodes, node] }
     useGraphStore.setState({ model: m })
     return node.id
   },
   updateNode: (id, patch) => {
     const m = useGraphStore.getState().model
     const nodes = m.nodes.map((n) => (n.id === id ? { ...n, ...patch, config: { ...n.config, ...(patch.config ?? {}) } } : n))
+    useGraphStore.setState({ model: { ...m, nodes } })
+  },
+  updateNodePosition: (id, position) => {
+    const m = useGraphStore.getState().model
+    const nodes = m.nodes.map((n) => (n.id === id ? { ...n, position } : n))
     useGraphStore.setState({ model: { ...m, nodes } })
   },
   removeNode: (id) => {
@@ -85,8 +94,9 @@ export const useGraphStore = create<{
   },
   addEdge: (source, target) => {
     const m = useGraphStore.getState().model
+    if (source === target || m.edges.some((e) => e.source === source && e.target === target)) return
     const id = uid()
-    const edge: GraphEdge = { id, source, target, config: { latencyMs: 0 } }
+    const edge: GraphEdge = { id, source, target, config: { latencyMs: 3 } }
     useGraphStore.setState({ model: { ...m, edges: [...m.edges, edge] } })
   },
   removeEdge: (id) => {

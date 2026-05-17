@@ -5,6 +5,8 @@ export type SimulationResult = {
   p95LatencyMs: number
   processedRequests: number
   bottleneckNodeIds: string[]
+  pathNodeIds: string[]
+  pathEdgeIds: string[]
 }
 
 function getNodeLatencyMs(node: GraphNode) {
@@ -30,12 +32,13 @@ function buildAdj(model: GraphModel) {
 // - Generate request paths by walking the graph from the leftmost "API" (or first node).
 // - Deterministic first-edge walk (no load balancing yet; LB support can be added later).
 // - Compute total latency as sum(node latency + edge latency).
-function simulateOnce(model: GraphModel, startNodeId: string, maxHops = 30): { latencyMs: number; path: string[] } {
+function simulateOnce(model: GraphModel, startNodeId: string, maxHops = 30): { latencyMs: number; path: string[]; edgePath: string[] } {
   const nodeById: Record<string, GraphNode> = Object.fromEntries(model.nodes.map((n) => [n.id, n]))
   const adj = buildAdj(model)
 
   let curr = startNodeId
   const path: string[] = [curr]
+  const edgePath: string[] = []
   let total = 0
 
   for (let hop = 0; hop < maxHops; hop++) {
@@ -54,12 +57,13 @@ function simulateOnce(model: GraphModel, startNodeId: string, maxHops = 30): { l
     // Choose first edge for now (Phase 2a). Load balancer behavior can be added later.
     const e = outgoing[0]
     total += edgeLatencyMs(e)
+    edgePath.push(e.id)
     curr = e.target
 
     path.push(curr)
   }
 
-  return { latencyMs: total, path }
+  return { latencyMs: total, path, edgePath }
 }
 
 function percentile(sorted: number[], p: number) {
@@ -68,23 +72,37 @@ function percentile(sorted: number[], p: number) {
   return sorted[idx] ?? 0
 }
 
+function findStartNodeId(model: GraphModel) {
+  const targets = new Set(model.edges.map((e) => e.target))
+  const entryNodes = model.nodes.filter((n) => !targets.has(n.id))
+  const candidates = entryNodes.length > 0 ? entryNodes : model.nodes
+  const preferred = candidates.find((n) => n.type === 'load_balancer') ?? candidates.find((n) => n.type === 'api')
+
+  return preferred?.id ?? candidates[0]?.id ?? model.nodes[0].id
+}
+
 export function runBasicSimulation(model: GraphModel, trafficRps: number): SimulationResult {
   if (model.nodes.length === 0) {
-    return { avgLatencyMs: 0, p95LatencyMs: 0, processedRequests: 0, bottleneckNodeIds: [] }
+    return { avgLatencyMs: 0, p95LatencyMs: 0, processedRequests: 0, bottleneckNodeIds: [], pathNodeIds: [], pathEdgeIds: [] }
   }
 
   // Phase 2: we interpret trafficRps as request count for one simulation tick.
   const processedRequests = Math.max(1, Math.min(trafficRps, 1000))
 
-  const apiNode = model.nodes.find((n) => n.type === 'api')
-  const startNodeId = apiNode?.id ?? model.nodes[0].id
+  const startNodeId = findStartNodeId(model)
 
   const latencies: number[] = []
   const visits: Record<string, number> = {}
+  let pathNodeIds: string[] = []
+  let pathEdgeIds: string[] = []
 
   for (let i = 0; i < processedRequests; i++) {
-    const { latencyMs, path } = simulateOnce(model, startNodeId)
+    const { latencyMs, path, edgePath } = simulateOnce(model, startNodeId)
     latencies.push(latencyMs)
+    if (i === 0) {
+      pathNodeIds = path
+      pathEdgeIds = edgePath
+    }
     for (const nodeId of path) {
       visits[nodeId] = (visits[nodeId] ?? 0) + 1
     }
@@ -99,6 +117,6 @@ export function runBasicSimulation(model: GraphModel, trafficRps: number): Simul
   const sortedVisits = Object.entries(visits).sort((a, b) => b[1] - a[1])
   const bottleneckNodeIds = sortedVisits.slice(0, 2).map(([id]) => id)
 
-  return { avgLatencyMs, p95LatencyMs, processedRequests, bottleneckNodeIds }
+  return { avgLatencyMs, p95LatencyMs, processedRequests, bottleneckNodeIds, pathNodeIds, pathEdgeIds }
 }
 

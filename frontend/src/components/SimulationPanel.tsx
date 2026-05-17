@@ -1,189 +1,194 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useGraphStore } from '../stores/graphStore'
 import type { NodeType } from '../simulation/types'
-import { runBasicSimulation } from '../simulation/engine'
+import type { SimulationResult } from '../simulation/engine'
 
-const nodeTypes: { type: NodeType; label: string }[] = [
-  { type: 'load_balancer', label: 'Load Balancer' },
-  { type: 'api', label: 'API' },
-  { type: 'cache', label: 'Cache (Redis)' },
-  { type: 'queue', label: 'Queue' },
-  { type: 'database', label: 'Database' },
+const nodeTypes: { type: NodeType; label: string; hint: string }[] = [
+  { type: 'load_balancer', label: 'Load Balancer', hint: 'routes traffic' },
+  { type: 'api', label: 'API Service', hint: 'handles requests' },
+  { type: 'cache', label: 'Cache', hint: 'fast reads' },
+  { type: 'queue', label: 'Queue', hint: 'async work' },
+  { type: 'database', label: 'Database', hint: 'persistent data' },
 ]
 
-type Bench = ReturnType<typeof runBasicSimulation>
-
-const EMPTY_BENCH: Bench = {
-  avgLatencyMs: 0,
-  p95LatencyMs: 0,
-  processedRequests: 0,
-  bottleneckNodeIds: [],
-}
-
-function formatBench(bench: Bench) {
-  if (bench.processedRequests <= 0) return 'Run simulation to see metrics.'
-  const top = bench.bottleneckNodeIds.length ? bench.bottleneckNodeIds.join(', ') : 'None'
-  return `avg: ${bench.avgLatencyMs.toFixed(1)}ms | p95: ${bench.p95LatencyMs.toFixed(1)}ms | bottleneck: ${top}`
+function metric(value: number, suffix = '') {
+  return `${value.toFixed(value % 1 === 0 ? 0 : 1)}${suffix}`
 }
 
 export function SimulationPanel({
   selectedId,
+  trafficRps,
+  result,
+  isRunning,
+  connectFromId,
+  onTrafficChange,
+  onRunSimulation,
+  onStartConnection,
+  onCancelConnection,
   onSelectNode,
+  onClearResult,
 }: {
   selectedId: string | null
-  onSelectNode: (id: string) => void
+  trafficRps: number
+  result: SimulationResult
+  isRunning: boolean
+  connectFromId: string | null
+  onTrafficChange: (value: number) => void
+  onRunSimulation: () => void
+  onStartConnection: (id: string) => void
+  onCancelConnection: () => void
+  onSelectNode: (id: string | null) => void
+  onClearResult: () => void
 }) {
   const model = useGraphStore((s) => s.model)
   const addNode = useGraphStore((s) => s.addNode)
   const updateNode = useGraphStore((s) => s.updateNode)
+  const removeNode = useGraphStore((s) => s.removeNode)
   const save = useGraphStore((s) => s.save)
   const load = useGraphStore((s) => s.load)
   const reset = useGraphStore((s) => s.reset)
 
   const selected = useMemo(() => model.nodes.find((n) => n.id === selectedId) ?? null, [model.nodes, selectedId])
-
-  const [trafficRps, setTrafficRps] = useState(100)
-  const [bench, setBench] = useState<Bench>(EMPTY_BENCH)
-
-  useEffect(() => {
-    // Keep bench until user runs simulation.
-  }, [trafficRps])
+  const canRun = model.nodes.length > 0
+  const bottleneckNames = result.bottleneckNodeIds
+    .map((id) => model.nodes.find((n) => n.id === id)?.name ?? id)
+    .join(', ')
 
   return (
-    <div style={{ border: '1px solid var(--border)', borderRadius: 12, padding: 12, textAlign: 'left' }}>
-      <h2 style={{ marginTop: 0 }}>Architecture Builder</h2>
-
-      <div style={{ marginBottom: 12 }}>
-        <div style={{ fontWeight: 600, marginBottom: 8 }}>Add node</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
+    <div className="control-stack">
+      <section className="panel-section">
+        <div className="section-heading">
+          <span>Build</span>
+          <small>Add services, then drag handles to connect them.</small>
+        </div>
+        <div className="node-palette">
           {nodeTypes.map((t) => (
             <button
               key={t.type}
               type="button"
+              className="palette-button"
               onClick={() => {
                 const id = addNode(t.type)
                 onSelectNode(id)
-              }}
-              style={{
-                padding: '8px 10px',
-                borderRadius: 10,
-                border: '1px solid var(--border)',
-                background: 'transparent',
-                cursor: 'pointer',
+                onClearResult()
               }}
             >
-              {t.label}
+              <span>{t.label}</span>
+              <small>{t.hint}</small>
             </button>
           ))}
         </div>
-      </div>
+      </section>
 
-      <div style={{ marginBottom: 12 }}>
-        <div style={{ fontWeight: 600, marginBottom: 8 }}>Traffic & Simulation (Phase 2)</div>
+      <section className="panel-section">
+        <div className="section-heading">
+          <span>Simulate</span>
+          <small>Watch request data move through the connected path.</small>
+        </div>
 
-        <label style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <input
-            type="range"
-            min={10}
-            max={1000}
-            step={10}
-            value={trafficRps}
-            onChange={(e) => setTrafficRps(Number(e.target.value))}
-          />
-          <span style={{ minWidth: 90, textAlign: 'right', fontFamily: 'var(--mono)' }}>{trafficRps} RPS</span>
+        <label className="field">
+          <span>Traffic</span>
+          <div className="range-row">
+            <input
+              type="range"
+              min={10}
+              max={1000}
+              step={10}
+              value={trafficRps}
+              onChange={(e) => onTrafficChange(Number(e.target.value))}
+            />
+            <strong>{trafficRps} RPS</strong>
+          </div>
         </label>
 
-        <button
-          type="button"
-          onClick={() => {
-            const result = runBasicSimulation(model, trafficRps)
-            setBench(result)
-          }}
-          style={{
-            marginTop: 10,
-            width: '100%',
-            padding: 10,
-            borderRadius: 10,
-            border: '1px solid var(--border)',
-            background: 'transparent',
-            cursor: 'pointer',
-            fontWeight: 600,
-          }}
-        >
-          Run simulation
+        <button type="button" className="primary-button" disabled={!canRun || isRunning} onClick={onRunSimulation}>
+          {isRunning ? 'Running simulation' : 'Run simulation'}
         </button>
 
-        <div style={{ marginTop: 10, padding: 10, borderRadius: 10, border: '1px solid var(--border)', background: 'rgba(0,0,0,0.02)' }}>
-          <div style={{ fontSize: 12, opacity: 0.9, marginBottom: 6 }}>Metrics</div>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 13 }}>{formatBench(bench)}</div>
+        <div className="metrics-grid">
+          <div>
+            <span>Average</span>
+            <strong>{metric(result.avgLatencyMs, 'ms')}</strong>
+          </div>
+          <div>
+            <span>P95</span>
+            <strong>{metric(result.p95LatencyMs, 'ms')}</strong>
+          </div>
+          <div>
+            <span>Requests</span>
+            <strong>{result.processedRequests}</strong>
+          </div>
+          <div>
+            <span>Path</span>
+            <strong>{result.pathNodeIds.length || '-'}</strong>
+          </div>
         </div>
-      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
-        <button
-          type="button"
-          onClick={() => save()}
-          style={{ padding: 10, borderRadius: 10, border: '1px solid var(--border)', background: 'transparent', cursor: 'pointer' }}
-        >
-          Save
-        </button>
-        <button
-          type="button"
-          onClick={() => load()}
-          style={{ padding: 10, borderRadius: 10, border: '1px solid var(--border)', background: 'transparent', cursor: 'pointer' }}
-        >
-          Load
-        </button>
+        <div className="insight-box">
+          <span>Bottleneck</span>
+          <p>{bottleneckNames || 'Run a simulation to detect busy components.'}</p>
+        </div>
+      </section>
+
+      <section className="panel-section">
+        <div className="section-heading">
+          <span>Selected Node</span>
+          <small>Edit latency to see how metrics change.</small>
+        </div>
+
+        {selected ? (
+          <div className="node-editor">
+            <label className="field">
+              <span>Name</span>
+              <input value={selected.name} onChange={(e) => updateNode(selected.id, { name: e.target.value })} />
+            </label>
+            <label className="field">
+              <span>Latency</span>
+              <input
+                type="number"
+                min={0}
+                value={typeof selected.config?.latencyMs === 'number' ? selected.config.latencyMs : 0}
+                onChange={(e) => updateNode(selected.id, { config: { latencyMs: Number(e.target.value) } })}
+              />
+            </label>
+            {connectFromId === selected.id ? (
+              <button type="button" className="secondary-button active" onClick={onCancelConnection}>
+                Click a destination node
+              </button>
+            ) : (
+              <button type="button" className="secondary-button" onClick={() => onStartConnection(selected.id)}>
+                Start connection
+              </button>
+            )}
+            <button
+              type="button"
+              className="danger-button"
+              onClick={() => {
+                removeNode(selected.id)
+                onClearResult()
+              }}
+            >
+              Delete node
+            </button>
+          </div>
+        ) : (
+          <div className="empty-state">Select a component on the canvas.</div>
+        )}
+      </section>
+
+      <section className="panel-actions">
+        <button type="button" onClick={save}>Save</button>
+        <button type="button" onClick={load}>Load</button>
         <button
           type="button"
           onClick={() => {
             reset()
-            setBench(EMPTY_BENCH)
-          }}
-          style={{
-            gridColumn: 'span 2',
-            padding: 10,
-            borderRadius: 10,
-            border: '1px solid var(--border)',
-            background: 'transparent',
-            cursor: 'pointer',
+            onClearResult()
           }}
         >
           Reset
         </button>
-      </div>
-
-      <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-        <h3 style={{ margin: '0 0 8px 0', fontSize: 16 }}>Node config</h3>
-        {!selected ? (
-          <div style={{ fontSize: 13, opacity: 0.9 }}>Select a node to edit.</div>
-        ) : (
-          <div style={{ display: 'grid', gap: 10 }}>
-            <label style={{ display: 'grid', gap: 6 }}>
-              <span style={{ fontSize: 13, opacity: 0.9 }}>Name</span>
-              <input
-                value={selected.name}
-                onChange={(e) => updateNode(selected.id, { name: e.target.value })}
-                style={{ padding: 8, borderRadius: 10, border: '1px solid var(--border)', background: 'transparent' }}
-              />
-            </label>
-
-            <label style={{ display: 'grid', gap: 6 }}>
-              <span style={{ fontSize: 13, opacity: 0.9 }}>Latency (ms)</span>
-              <input
-                type="number"
-                value={typeof selected.config?.latencyMs === 'number' ? selected.config.latencyMs : 0}
-                onChange={(e) => {
-                  const latencyMs = Number(e.target.value)
-                  updateNode(selected.id, { config: { latencyMs } })
-                }}
-                style={{ padding: 8, borderRadius: 10, border: '1px solid var(--border)', background: 'transparent' }}
-              />
-            </label>
-          </div>
-        )}
-      </div>
+      </section>
     </div>
   )
 }
-
