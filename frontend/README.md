@@ -1,73 +1,92 @@
-# React + TypeScript + Vite
+# System Design Simulator Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interactive React app for sketching a system architecture and running a basic latency simulation over the graph.
 
-Currently, two official plugins are available:
+## What You Can Do
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Add system components: load balancer, API, cache, queue, and database.
+- Connect components on the canvas to create request paths.
+- Configure per-node latency.
+- Run a simple traffic simulation and view average latency, p95 latency, processed requests, and likely bottlenecks.
+- Save, load, and reset the current graph using browser local storage.
 
-## React Compiler
+## Requirements
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Node.js 24 or newer is recommended for the current dependency set.
+- npm, included with Node.js.
 
-## Expanding the ESLint configuration
+## Install
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+From this folder:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+On Windows PowerShell, if `npm` is blocked by the execution policy, use:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```powershell
+npm.cmd install
 ```
+
+## Run In Development
+
+```bash
+npm run dev
+```
+
+PowerShell fallback:
+
+```powershell
+npm.cmd run dev
+```
+
+Open the local URL printed by Vite, usually:
+
+```text
+http://localhost:5173
+```
+
+## Use The App
+
+1. Click a component button in the left panel to add a node.
+2. Drag from the right handle of one node to the left handle of another node to connect them.
+3. Select a node and edit its name or latency in milliseconds.
+4. Adjust the traffic slider.
+5. Click `Run simulation` to calculate latency metrics.
+6. Click `Save` to persist the graph in browser local storage, `Load` to restore it, or `Reset` to clear it.
+
+## Build For Production
+
+```bash
+npm run build
+```
+
+PowerShell fallback:
+
+```powershell
+npm.cmd run build
+```
+
+The production output is written to `dist/`.
+
+## Preview A Production Build
+
+```bash
+npm run preview
+```
+
+PowerShell fallback:
+
+```powershell
+npm.cmd run preview
+```
+
+## Quality Checks
+
+```bash
+npm run lint
+npm run build
+```
+
+The build script uses `vite build --app` because the installed Vite 8 toolchain expects the app builder path for this project.

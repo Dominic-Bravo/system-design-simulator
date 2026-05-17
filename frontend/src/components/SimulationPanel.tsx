@@ -23,7 +23,7 @@ const EMPTY_BENCH: Bench = {
 function formatBench(bench: Bench) {
   if (bench.processedRequests <= 0) return 'Run simulation to see metrics.'
   const top = bench.bottleneckNodeIds.length ? bench.bottleneckNodeIds.join(', ') : 'None'
-  return `avg: ${bench.avgLatencyMs.toFixed(1)}ms · p95: ${bench.p95LatencyMs.toFixed(1)}ms · bottleneck: ${top}`
+  return `avg: ${bench.avgLatencyMs.toFixed(1)}ms | p95: ${bench.p95LatencyMs.toFixed(1)}ms | bottleneck: ${top}`
 }
 
 export function SimulationPanel({
