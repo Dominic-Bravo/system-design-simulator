@@ -76,7 +76,7 @@ export default function App() {
       addEdge(connectFromId, id)
       setConnectFromId(null)
       setSelectedId(id)
-      setIsConfigOpen(true)
+      setIsConfigOpen(false)
       setResult(EMPTY_RESULT)
       setActiveStep(-1)
       setIsRunning(false)
@@ -85,6 +85,11 @@ export default function App() {
 
     setSelectedId(id)
     setIsConfigOpen(Boolean(id))
+  }
+
+  const selectAddedNode = (id: string) => {
+    setSelectedId(id)
+    setIsConfigOpen(false)
   }
 
   return (
@@ -101,7 +106,7 @@ export default function App() {
             connectFromId={connectFromId}
             onStartConnection={(id) => setConnectFromId(id)}
             onCancelConnection={() => setConnectFromId(null)}
-            onSelectNode={selectNode}
+            onNodeAdded={selectAddedNode}
             onOpenConfig={() => setIsConfigOpen(Boolean(selectedId))}
             onClearResult={() => {
               setResult(EMPTY_RESULT)

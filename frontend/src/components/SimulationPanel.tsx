@@ -17,7 +17,7 @@ export function SimulationPanel({
   onRunSimulation,
   onStartConnection,
   onCancelConnection,
-  onSelectNode,
+  onNodeAdded,
   onOpenConfig,
   onClearResult,
 }: {
@@ -30,7 +30,7 @@ export function SimulationPanel({
   onRunSimulation: () => void
   onStartConnection: (id: string) => void
   onCancelConnection: () => void
-  onSelectNode: (id: string | null) => void
+  onNodeAdded: (id: string) => void
   onOpenConfig: () => void
   onClearResult: () => void
 }) {
@@ -69,7 +69,7 @@ export function SimulationPanel({
                     className="palette-button"
                     onClick={() => {
                       const id = addNode(t.type)
-                      onSelectNode(id)
+                      onNodeAdded(id)
                       onClearResult()
                     }}
                   >

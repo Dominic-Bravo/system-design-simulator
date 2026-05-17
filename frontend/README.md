@@ -51,8 +51,8 @@ http://localhost:5173
 ## Use The App
 
 1. Click component buttons in the left panel to add nodes.
-2. When a node is added, use the configuration modal to edit realistic settings for that component.
-3. Click any node on the canvas to reopen its configuration modal.
+2. Newly added nodes appear on the canvas without opening the configuration modal.
+3. Click any existing node on the canvas, or click `Configure node`, to open its small floating configuration panel.
 4. Add or remove outgoing connections from the modal, or use `Start connection` and click a destination node.
 5. Drag nodes on the canvas to move them around.
 6. Adjust the traffic slider.

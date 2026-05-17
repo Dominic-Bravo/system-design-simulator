@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import type { GraphNode } from '../simulation/types'
 import { nodeDefinitionByType } from '../simulation/nodeCatalog'
 
@@ -21,20 +22,55 @@ export function NodeConfigModal({
   onDeleteNode: () => void
 }) {
   const definition = nodeDefinitionByType[node.type]
+  const dragOffset = useRef({ x: 0, y: 0 })
+  const [isDragging, setIsDragging] = useState(false)
+  const [position, setPosition] = useState({ x: Math.max(360, window.innerWidth - 470), y: 96 })
   const availableTargets = nodes.filter((candidate) => candidate.id !== node.id && !outgoingNodeIds.includes(candidate.id))
   const connectedTargets = outgoingNodeIds
     .map((id) => nodes.find((candidate) => candidate.id === id))
     .filter((candidate): candidate is GraphNode => Boolean(candidate))
 
+  useEffect(() => {
+    if (!isDragging) return
+
+    const onPointerMove = (event: PointerEvent) => {
+      const nextX = Math.max(8, Math.min(window.innerWidth - 260, event.clientX - dragOffset.current.x))
+      const nextY = Math.max(8, Math.min(window.innerHeight - 120, event.clientY - dragOffset.current.y))
+      setPosition({ x: nextX, y: nextY })
+    }
+
+    const onPointerUp = () => setIsDragging(false)
+
+    window.addEventListener('pointermove', onPointerMove)
+    window.addEventListener('pointerup', onPointerUp)
+
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove)
+      window.removeEventListener('pointerup', onPointerUp)
+    }
+  }, [isDragging])
+
   return (
-    <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
-      <section className="node-modal" role="dialog" aria-modal="true" aria-label="Configure node" onMouseDown={(e) => e.stopPropagation()}>
-        <header className="modal-header">
+    <div className="modal-backdrop" role="presentation">
+      <section
+        className="node-modal"
+        role="dialog"
+        aria-modal="false"
+        aria-label="Configure node"
+        style={{ left: position.x, top: position.y }}
+      >
+        <header
+          className="modal-header draggable"
+          onPointerDown={(event) => {
+            dragOffset.current = { x: event.clientX - position.x, y: event.clientY - position.y }
+            setIsDragging(true)
+          }}
+        >
           <div>
             <span>{definition.category}</span>
             <h2>{definition.label}</h2>
           </div>
-          <button type="button" className="icon-button" aria-label="Close" onClick={onClose}>x</button>
+          <button type="button" className="icon-button" aria-label="Close" onPointerDown={(e) => e.stopPropagation()} onClick={onClose}>x</button>
         </header>
 
         <div className="modal-body">

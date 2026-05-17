@@ -474,22 +474,26 @@ button {
   position: fixed;
   inset: 0;
   z-index: 20;
-  display: grid;
-  place-items: center;
-  background: rgba(15, 23, 42, 0.38);
-  padding: 18px;
+  pointer-events: none;
 }
 
 .node-modal {
+  position: fixed;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  width: min(620px, 100%);
-  max-height: min(760px, calc(100svh - 36px));
+  width: 430px;
+  height: 560px;
+  min-width: 320px;
+  min-height: 360px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100svh - 16px);
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
   box-shadow: var(--shadow);
   overflow: hidden;
+  pointer-events: auto;
+  resize: both;
 }
 
 .modal-header,
@@ -512,7 +516,12 @@ button {
 .modal-header h2 {
   margin: 2px 0 0;
   color: var(--text-h);
-  font-size: 20px;
+  font-size: 17px;
+}
+
+.modal-header.draggable {
+  cursor: move;
+  user-select: none;
 }
 
 .icon-button {
@@ -530,8 +539,8 @@ button {
 
 .modal-body {
   display: grid;
-  gap: 14px;
-  padding: 16px;
+  gap: 12px;
+  padding: 14px;
   overflow: auto;
 }
 
