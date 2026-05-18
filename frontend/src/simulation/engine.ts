@@ -1,5 +1,9 @@
 import type { GraphModel, GraphNode, GraphEdge } from './types'
 
+
+// Add linking of nodes
+// To make sure the data flows follows accordingly
+
 export type SimulationResult = {
   avgLatencyMs: number
   p95LatencyMs: number
