@@ -1,3 +1,7 @@
+remove this
+I'll update this tomorrow 
+add linking of nodes and make sure that the data in simulation follows the flow of the system design. 
+
 # SystemDesignSimulator - TODO
 
 add in the future a linking  to nodes like on how the nodes communicate 
