@@ -1,3 +1,7 @@
+remove this
+I'll update this tomorrow 
+add linking of nodes and make sure that the data in simulation follows the flow of the system design. 
+
 # SystemDesignSimulator - TODO
 
 ## Phase 1 MVP (Foundation)
