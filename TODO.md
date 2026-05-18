@@ -1,5 +1,9 @@
 # SystemDesignSimulator - TODO
 
+add in the future a linking  to nodes like on how the nodes communicate 
+also add rules and boundary
+and also cost
+
 ## Phase 1 MVP (Foundation)
 - [x] Inspect current frontend structure (App.tsx/main.tsx) and replace scaffold UI with simulator layout
 - [x] Add Zustand store for nodes/edges graph model + simulation settings
